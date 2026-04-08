@@ -1,10 +1,9 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+
 import express from 'express';
-import dotenv from "dotenv";
 import { pool } from './config/db.js';
 import uploadRouter from './modules/upload/upload.routes.js';
-
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,11 +19,10 @@ app.listen(PORT, () => {
 const connectDB = async () => {
   try {
     const client = await pool.connect();
-    console.log("✅ Database connected successfully");
-
+    console.log("Database connected successfully");
     client.release();
   } catch (err) {
-    console.error("❌ Database connection failed:", err);
+    console.error("Database connection failed:", err);
   }
 };
 
