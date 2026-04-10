@@ -1,11 +1,17 @@
+import fs from "fs";
 import type { Request, Response } from "express";
 import { pool } from "../../config/db.js";
+
 import { parseToAST } from "../../utils/parseToAST.js";
 import { extractFunctions } from "../../utils/etractFunctions.js";
+
 import { generateTestCases } from "../ai/ai.service.js";
+import { parseJestResult } from "../../utils/parseJestResult.js";
+import { runTestInSandbox } from "../sandbox/sandbox.Service.js";
 
 export const uploadFile = async (req: Request, res: Response) => {
   try {
+
     const file = req.file;
 
     if (!file) {
@@ -17,29 +23,34 @@ export const uploadFile = async (req: Request, res: Response) => {
       [file.filename, file.path]
     );
 
+    const code = fs.readFileSync(file.path, "utf-8");
+
     const AST = parseToAST(file.path);
     const functions = extractFunctions(AST);
 
-    if (!functions || functions.length === 0) {
-      return res.status(400).json({
-        message: "No functions found in the uploaded file",
-        data: dataStored.rows[0],
-      });
+    if (!functions.length) {
+      return res.status(400).json({ message: "No functions found" });
     }
 
     const testCases = await generateTestCases(functions);
 
-    return res.status(200).json({
-      message: "File uploaded and test cases generated successfully",
-      data: dataStored.rows[0],
+    const rawResult = await runTestInSandbox(code, testCases);
+
+    const parsedResult = parseJestResult(rawResult);
+
+    return res.json({
+      message: "Success",
       testCases,
+      result: parsedResult,
+      debug: rawResult 
     });
 
   } catch (error: any) {
-    console.error("Upload error:", error.message);
+    console.error(error);
+
     return res.status(500).json({
-      message: "Upload failed",
-      error: error.message,
+      message: "Error",
+      error: error.message
     });
   }
 };
