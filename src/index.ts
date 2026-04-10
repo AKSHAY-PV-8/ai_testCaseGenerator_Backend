@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import express from 'express';
-import { pool } from './config/db.js';
+import { initDB, pool } from './config/db.js';
 import uploadRouter from './modules/upload/upload.routes.js';
 import cors from "cors"
 
@@ -29,6 +29,7 @@ const connectDB = async () => {
     const client = await pool.connect();
     console.log("Database connected successfully");
     client.release();
+    await initDB();
   } catch (err) {
     console.error("Database connection failed:", err);
   }

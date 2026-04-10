@@ -17,3 +17,19 @@ export const pool = new Pool({
     : false,
 })
 
+export const initDB = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS uploads (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL,
+        filepath VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log("✓ Table ready");
+  } catch (err) {
+    console.error("Table creation failed:", err);
+  }
+};
+
