@@ -3,7 +3,6 @@ import path from "path";
 import { exec } from "child_process";
 import { v4 as uuidv4 } from "uuid";
 
-
 export const runTestInSandbox = async (
   code: string,
   testCases: string
@@ -30,22 +29,19 @@ export const runTestInSandbox = async (
     const importLine = `const { fun } = require('./code');\n\n`;
     fs.writeFileSync(path.join(dir, "code.test.js"), importLine + testCases);
 
-    const absoluteDir = path.resolve(dir); 
+    const absoluteDir = path.resolve(dir);
 
-    const command = `docker run --rm -v "${absoluteDir}:/app" -w /app node:18 sh -c "npm install jest --save-dev && npx jest --runInBand --json --outputFile=result.json || true"`;
-
-    console.log("🐳 Docker command:\n", command);
+    // ✅ Run Jest directly — no docker run needed
+    // Render's Docker container already has Node 18
+    const command = `cd "${absoluteDir}" && npm install jest --save-dev && npx jest --runInBand --json --outputFile=result.json || true`;
 
     exec(
       command,
-      {
-        timeout: 120000,  
-        shell: "cmd.exe", 
-      },
+      { timeout: 120000 },
       (error, stdout, stderr) => {
-        console.log("STDOUT:\n", stdout);
-        console.log("STDERR:\n", stderr);
-        if (error) console.log("❌ exec error:", error.message);
+        console.log("🟢 STDOUT:", stdout);
+        console.log("🔴 STDERR:", stderr);
+        if (error) console.log("❌ Error:", error.message);
 
         const resultPath = path.join(dir, "result.json");
 
@@ -61,6 +57,7 @@ export const runTestInSandbox = async (
         }
 
         const result = fs.readFileSync(resultPath, "utf-8");
+        fs.rmSync(dir, { recursive: true, force: true });
         resolve(result);
       }
     );
